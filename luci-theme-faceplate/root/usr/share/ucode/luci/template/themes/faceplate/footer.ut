@@ -1,0 +1,22 @@
+{#
+ Faceplate — Licensed to the public under the Apache License 2.0.
+-#}
+
+		{% if (!blank_page): %}
+				</div>
+				<footer class="fp-foot">
+					<span>
+						<a href="https://github.com/openwrt/luci" target="_blank" rel="noreferrer">{{ version.luciname }} {{ version.luciversion }}</a>
+						on
+						<a href="{{ entityencode(version.disturl ?? '#', true) }}" target="_blank" rel="noreferrer">{{ version.distname }} {{ version.distversion }}</a>
+						{% if (lua_active): %}
+							({{ _('Lua compatibility mode active') }})
+						{% endif %}
+					</span>
+				</footer>
+			</div>
+		</div>
+		<script>L.require('menu-faceplate')</script>
+		{% endif %}
+	</body>
+</html>

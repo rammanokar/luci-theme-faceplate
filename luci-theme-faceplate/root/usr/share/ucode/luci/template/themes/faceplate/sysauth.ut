@@ -1,0 +1,68 @@
+{#
+ Faceplate — login page styled after the device label on the underside of the router.
+ Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	const board = ubus.call('system', 'board') ?? {};
+	const host = striptags(board.hostname ?? '?');
+-%}
+
+{% include('header', { blank_page: true }) %}
+
+<main class="fp-login">
+	<section class="fp-sticker" aria-label="{{ _('Device') }}">
+		<div class="fp-sticker-head">
+			<span class="fp-led fp-led-power" aria-hidden="true"></span>
+			<span class="fp-sticker-host">{{ host }}</span>
+		</div>
+		<dl class="fp-sticker-specs">
+			{% if (board.model): %}
+			<div><dt>{{ _('Model') }}</dt><dd>{{ striptags(board.model) }}</dd></div>
+			{% endif %}
+			{% if (board.release?.description): %}
+			<div><dt>{{ _('Firmware Version') }}</dt><dd>{{ striptags(board.release.description) }}</dd></div>
+			{% endif %}
+			{% if (board.kernel): %}
+			<div><dt>{{ _('Kernel Version') }}</dt><dd>{{ striptags(board.kernel) }}</dd></div>
+			{% endif %}
+			{% if (board.system): %}
+			<div><dt>{{ _('Architecture') }}</dt><dd>{{ striptags(board.system) }}</dd></div>
+			{% endif %}
+		</dl>
+		<div class="fp-sticker-code" aria-hidden="true"></div>
+	</section>
+
+	<form method="post" class="fp-login-form" id="fp-login-form">
+		<h1>{{ _('Authorization Required') }}</h1>
+		<p class="fp-login-lede">{{ _('Please enter your username and password.') }}</p>
+
+		{% if (fuser): %}
+		<div class="alert-message error" role="alert">
+			{{ _('Invalid username and/or password! Please try again.') }}
+		</div>
+		{% endif %}
+
+		<label class="fp-field" for="luci_username">
+			<span>{{ _('Username') }}</span>
+			<input name="luci_username" id="luci_username" type="text" autocomplete="username" value="{{ entityencode(duser, true) }}">
+		</label>
+		<label class="fp-field" for="luci_password">
+			<span>{{ _('Password') }}</span>
+			<input name="luci_password" id="luci_password" type="password" autocomplete="current-password" autofocus>
+		</label>
+
+		<button type="submit" class="btn cbi-button-positive important fp-login-btn">{{ _('Log in') }}</button>
+	</form>
+</main>
+
+<script>
+	document.getElementById('fp-login-form').addEventListener('submit', function() {
+		var b = this.querySelector('button');
+		b.disabled = true;
+		b.classList.add('spinning');
+		b.textContent = {{ sprintf('%J', _('Logging in…')) }};
+	});
+</script>
+
+{% include('footer', { blank_page: true }) %}

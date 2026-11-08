@@ -1,0 +1,287 @@
+// Faceplate security & health audit.
+// NOTE: never call ubus objects served by rpcd itself (iwinfo, file, luci, …)
+// from here — rpcd is single-threaded and would deadlock.
+// Runs on the router; returns findings only. Password hashes and Wi-Fi keys
+// are examined here and never leave this process.
+// Licensed under the Apache License 2.0.
+
+'use strict';
+
+import { access, readfile, writefile, chmod } from 'fs';
+import { md5 } from 'digest';
+import { cursor } from 'uci';
+import { crypt, getspnam } from 'luci.core';
+
+const COMMON = [
+	'admin', 'administrator', 'password', 'passw0rd', 'p@ssw0rd', 'p@ssword', 'password1', 'password123',
+	'root', 'toor', 'openwrt', 'router', 'default', 'changeme', 'letmein', 'welcome', 'secret', 'guest',
+	'1234', '12345', '123456', '1234567', '12345678', '123456789', '1234567890', '0000', '00000000',
+	'11111111', '88888888', '87654321', 'qwerty', 'qwerty123', 'qwertyuiop', 'abc123', 'abcd1234',
+	'iloveyou', 'test', 'test123', 'admin123', 'admin@123', 'admin1234', 'wifi', 'wifi1234', 'internet'
+];
+
+const MGMT_PORTS = { '22': 'SSH', '23': 'Telnet', '80': 'web interface (HTTP)', '443': 'web interface (HTTPS)', '8080': 'web', '8443': 'web', '53': 'DNS' };
+const RISKY_FWD = { '21': 'FTP', '22': 'SSH', '23': 'Telnet', '135': 'Windows RPC', '139': 'Windows file sharing', '445': 'Windows file sharing', '1433': 'SQL Server', '3306': 'MySQL', '3389': 'Remote Desktop', '5900': 'VNC' };
+
+function band_name(b) {
+	return { '2g': '2.4 GHz', '5g': '5 GHz', '6g': '6 GHz', '60g': '60 GHz' }[b] ?? b ?? '';
+}
+
+function ports_of(v) {
+	if (v == null) return [];
+	let out = [];
+	for (let part in split(join(' ', type(v) == 'array' ? v : [ v ]), /[ ,]+/)) {
+		let m = match(part, /^([0-9]+)([-:]([0-9]+))?$/);
+		if (!m) continue;
+		let lo = +m[1], hi = m[3] ? +m[3] : lo;
+		for (let p in keys(MGMT_PORTS)) if (+p >= lo && +p <= hi) push(out, p);
+		for (let p in keys(RISKY_FWD)) if (+p >= lo && +p <= hi && !(p in out)) push(out, p);
+	}
+	return uniq(out);
+}
+
+// Reasons a Wi-Fi key is weak. Never returns the key.
+function key_weakness(key, ssid) {
+	let r = [];
+	let k = lc(key ?? '');
+	if (length(key) < 12) push(r, sprintf('it has only %d characters (12 or more is recommended)', length(key)));
+	if (k in COMMON) push(r, 'it is one of the most common passwords');
+	if (match(key, /^[0-9]+$/)) push(r, 'it contains only digits');
+	if (length(ssid) >= 3 && index(k, lc(ssid)) >= 0) push(r, 'it contains the network name');
+	if (match(key, /^[A-Za-z]+[^A-Za-z0-9]?[0-9]{1,4}[^A-Za-z0-9]?$/)) push(r, 'it follows the common “word + symbol + numbers” pattern');
+	if (length(key) && length(uniq(split(key, ''))) <= 2) push(r, 'it uses only one or two different characters');
+	return r;
+}
+
+const methods = {
+	audit: {
+		call: function() {
+			const c = cursor();
+			let findings = [], passed = [];
+			const add = (severity, title, detail, fix_label, fix_path) =>
+				push(findings, { severity, title, detail, fix: fix_label ? { label: fix_label, path: fix_path } : null });
+
+			/* ---------------- admin password ---------------- */
+			const sp = getspnam('root');
+			let wifi_keys = [];
+			c.foreach('wireless', 'wifi-iface', (s) => { if (s.key && length(s.key) >= 8) push(wifi_keys, s.key); });
+
+			if (sp && sp.pwdp === '') {
+				add('critical', 'No administrator password',
+					'Anyone on your network can open this page and change any setting.',
+					'Set a password', 'admin/system/admin/password');
+			}
+			else if (sp && sp.pwdp && !match(sp.pwdp, /^[!*]/)) {
+				const host = c.get('system', '@system[0]', 'hostname');
+				let common = false, reused = false;
+				/* hashing ~45 candidates is slow on MIPS; cache the verdict per hash + keys */
+				const ck = md5(sp.pwdp + '\n' + join('\n', wifi_keys) + '\n' + host);
+				const cached = json(readfile('/tmp/faceplate-pwcheck.json') ?? 'null');
+				if (cached?.k == ck) {
+					common = cached.common;
+					reused = cached.reused;
+				}
+				else {
+					let cands = [ ...COMMON ];
+					if (host) push(cands, host, lc(host));
+					for (let cand in cands)
+						if (crypt(cand, sp.pwdp) == sp.pwdp) { common = true; break; }
+					for (let k in wifi_keys)
+						if (crypt(k, sp.pwdp) == sp.pwdp) { reused = true; break; }
+					writefile('/tmp/faceplate-pwcheck.json', sprintf('%J', { k: ck, common, reused }));
+					chmod('/tmp/faceplate-pwcheck.json', 0600);
+				}
+
+				if (common)
+					add('critical', 'Administrator password is easy to guess',
+						'It matches a well-known default or common password. Anyone who tries it can take over the router.',
+						'Change password', 'admin/system/admin/password');
+				else if (reused)
+					add('warning', 'Administrator password is the same as the Wi-Fi password',
+						'Everyone you share your Wi-Fi password with can also sign in here and change the router\'s settings.',
+						'Change password', 'admin/system/admin/password');
+				else
+					push(passed, 'Administrator password is not a common password and differs from the Wi-Fi password');
+			}
+
+			/* ---------------- Wi-Fi networks ---------------- */
+			c.foreach('wireless', 'wifi-iface', (s) => {
+				const radio = c.get_all('wireless', s.device) ?? {};
+				if (s.disabled == '1' || radio.disabled == '1' || (s.mode ?? 'ap') != 'ap') return;
+
+				const ssid = s.ssid ?? '?';
+				const label = sprintf('“%s” (%s)', ssid, band_name(radio.band));
+				const enc = s.encryption ?? 'none';
+				const base = split(enc, '+')[0];
+
+				if (base == 'none')
+					add('critical', sprintf('Wi-Fi %s has no password', label),
+						'Anyone nearby can join your network, use your connection and see unencrypted traffic.',
+						'Secure this network', 'admin/network/wireless');
+				else if (index(base, 'wep') == 0)
+					add('critical', sprintf('Wi-Fi %s uses WEP', label),
+						'WEP can be cracked in minutes. Switch to WPA2/WPA3.',
+						'Change encryption', 'admin/network/wireless');
+				else if (base == 'psk' || base == 'psk-mixed' || index(enc, 'tkip') >= 0)
+					add('warning', sprintf('Wi-Fi %s allows outdated WPA/TKIP', label),
+						'Old WPA and TKIP have known weaknesses and slow down every device. Use “WPA2-PSK/WPA3-SAE mixed mode”.',
+						'Change encryption', 'admin/network/wireless');
+				else if (base == 'psk2')
+					add('suggestion', sprintf('Turn on WPA3 for %s', label),
+						'“WPA2-PSK/WPA3-SAE mixed mode” adds protection against password guessing and keeps older devices working.',
+						'Change encryption', 'admin/network/wireless');
+				else if (base == 'owe')
+					push(passed, sprintf('Wi-Fi %s uses encrypted open access (OWE)', label));
+				else if (index(base, 'sae') == 0)
+					push(passed, sprintf('Wi-Fi %s uses WPA3', label));
+				else if (index(base, 'wpa') == 0)
+					push(passed, sprintf('Wi-Fi %s uses enterprise authentication', label));
+
+				if (s.key && (index(base, 'psk') == 0 || index(base, 'sae') == 0)) {
+					const why = key_weakness(s.key, ssid);
+					if (length(why))
+						add('warning', sprintf('Wi-Fi password for %s is weak', label),
+							sprintf('It can be guessed by automated tools because %s. Use a passphrase of four or more random words.', join('; ', why)),
+							'Change Wi-Fi password', 'admin/network/wireless');
+					else
+						push(passed, sprintf('Wi-Fi password for %s is strong', label));
+				}
+
+				if (s.wps_pushbutton == '1')
+					add('warning', sprintf('WPS is on for %s', label),
+						'WPS lets devices join without the password and has a history of security flaws. Turn it off unless you need it.',
+						'Wi-Fi settings', 'admin/network/wireless');
+
+				if (s.hidden == '1')
+					add('suggestion', sprintf('%s is hidden', label),
+						'Hiding the network name does not stop attackers and makes phones search for it everywhere they go.',
+						'Wi-Fi settings', 'admin/network/wireless');
+			});
+
+			/* ---------------- radios: channel, width, noise ---------------- */
+			c.foreach('wireless', 'wifi-device', (r) => {
+				const name = band_name(r.band);
+				if (r.disabled == '1') return;
+
+				if (!r.country || r.country == '00')
+					add('warning', sprintf('%s radio has no country set', name),
+						'Without a country the router uses the most restrictive channels and power, and may break local rules.',
+						'Set country', 'admin/network/wireless');
+
+				const ch = r.channel ?? 'auto';
+				if (r.band == '2g') {
+					if (ch != 'auto' && !(ch in [ '1', '6', '11' ]))
+						add('suggestion', sprintf('2.4 GHz is on channel %s', ch),
+							'Channels other than 1, 6 and 11 overlap two neighbouring channels at once, causing more interference. Run a scan below to pick the quietest of 1, 6 or 11.',
+							'Change channel', 'admin/network/wireless');
+					else
+						push(passed, sprintf('2.4 GHz channel (%s) avoids overlap', ch));
+
+					if (match(r.htmode ?? '', /40/))
+						add('suggestion', '2.4 GHz uses 40 MHz channel width',
+							'A 40 MHz channel occupies most of the 2.4 GHz band and collides with neighbours. 20 MHz is usually faster in practice.',
+							'Change width', 'admin/network/wireless');
+				}
+				else if (r.band == '5g') {
+					if (match(r.htmode ?? '', /20$/))
+						add('suggestion', '5 GHz uses only 20 MHz channel width',
+							'5 GHz has room for 80 MHz channels, which roughly quadruple the top speed for nearby devices.',
+							'Change width', 'admin/network/wireless');
+					else
+						push(passed, sprintf('5 GHz uses a wide channel (%s)', r.htmode ?? 'auto'));
+				}
+
+				/* background noise is checked in the browser from live iwinfo data */
+			});
+
+			/* ---------------- firewall ---------------- */
+			let wan_zones = [];
+			let fw_ok = true;
+			c.foreach('firewall', 'zone', (z) => {
+				const nets = type(z.network) == 'array' ? z.network : split(z.network ?? '', ' ');
+				if (z.name == 'wan' || 'wan' in nets || 'wan6' in nets) {
+					push(wan_zones, z.name);
+					if (z.input == 'ACCEPT' || z.forward == 'ACCEPT') {
+						fw_ok = false;
+						add('critical', sprintf('Firewall lets internet traffic into “%s”', z.name),
+							sprintf('The %s policy is ACCEPT, so anything on the internet can reach the router or your devices. Set it to REJECT.', z.input == 'ACCEPT' ? 'input' : 'forward'),
+							'Firewall zones', 'admin/network/firewall/zones');
+					}
+				}
+			});
+			if (fw_ok && length(wan_zones))
+				push(passed, 'Firewall blocks unsolicited traffic from the internet');
+
+			c.foreach('firewall', 'rule', (rl) => {
+				if (rl.enabled == '0' || rl.target != 'ACCEPT' || rl.dest) return;
+				if (!(rl.src in wan_zones) && rl.src != '*') return;
+				for (let p in ports_of(rl.dest_port)) {
+					if (!(p in keys(MGMT_PORTS))) continue;
+					add('critical', sprintf('%s is reachable from the internet', MGMT_PORTS[p]),
+						sprintf('Firewall rule “%s” opens port %s on the router to the whole internet, where it is scanned constantly. Use a VPN instead.', rl.name ?? '?', p),
+						'Traffic rules', 'admin/network/firewall/rules');
+				}
+			});
+
+			let fwd = 0;
+			c.foreach('firewall', 'redirect', (rd) => {
+				if (rd.enabled == '0' || (rd.target ?? 'DNAT') != 'DNAT' || !(rd.src in wan_zones)) return;
+				fwd++;
+				for (let p in ports_of(rd.src_dport)) {
+					if (!(p in keys(RISKY_FWD))) continue;
+					add('warning', sprintf('Port %s (%s) is forwarded from the internet', p, RISKY_FWD[p]),
+						sprintf('Forward “%s” exposes a service that attackers scan for constantly. Remove it or use a VPN.', rd.name ?? '?'),
+						'Port forwards', 'admin/network/firewall/forwards');
+				}
+			});
+			if (!fwd) push(passed, 'No ports are forwarded from the internet');
+
+			/* ---------------- SSH ---------------- */
+			c.foreach('dropbear', 'dropbear', (d) => {
+				if (d.enable == '0') return;
+				const pw = d.PasswordAuth != 'off' && d.PasswordAuth != '0';
+				if (!d.Interface && pw)
+					add('warning', 'SSH accepts passwords on every interface',
+						'Limit SSH to the LAN interface and sign in with keys instead of passwords.',
+						'SSH settings', 'admin/system/admin/dropbear');
+				else
+					push(passed, d.Interface ? sprintf('SSH only listens on “%s”', d.Interface) : 'SSH requires keys');
+			});
+
+			/* ---------------- web interface ---------------- */
+			const https = c.get('uhttpd', 'main', 'listen_https');
+			if (https && c.get('uhttpd', 'main', 'redirect_https') != '1')
+				add('warning', 'Web interface can be used without encryption',
+					'Your password is sent in plain text when you open http:// instead of https://. Turn on “Redirect to HTTPS”.',
+					'Web server settings', 'admin/system/admin/uhttpd');
+			else if (https)
+				push(passed, 'Web interface always uses HTTPS');
+
+			/* ---------------- time sync, DNS, UPnP ---------------- */
+			if (c.get('system', 'ntp', 'enabled') == '0')
+				add('warning', 'Time synchronisation is off',
+					'A wrong clock breaks certificate checks, scheduled tasks and log timestamps.',
+					'Time settings', 'admin/system/system');
+			else
+				push(passed, 'Clock is synchronised over the internet');
+
+			let rebind = null;
+			c.foreach('dhcp', 'dnsmasq', (d) => { rebind ??= d.rebind_protection ?? '1'; });
+			if (rebind == '0')
+				add('suggestion', 'DNS rebinding protection is off',
+					'This protection stops malicious websites from reaching devices on your network through DNS tricks.',
+					'DNS settings', 'admin/network/dns');
+			else if (rebind != null)
+				push(passed, 'DNS rebinding protection is on');
+
+			if (access('/etc/config/upnpd') && c.get('upnpd', 'config', 'enabled') == '1')
+				add('suggestion', 'UPnP is on',
+					'UPnP lets any device on your network open ports to the internet without asking. Turn it off unless a game or app needs it.',
+					null, null);
+
+			return { findings, passed };
+		}
+	}
+};
+
+return { faceplate: methods };

@@ -1,0 +1,49 @@
+{
+	"luci-theme-faceplate-dashboard": {
+		"description": "Grant read access to the Faceplate dashboard",
+		"read": {
+			"file": {
+				"/proc/stat": [
+					"read"
+				],
+				"/proc/sys/net/netfilter/nf_conntrack_count": [
+					"read"
+				],
+				"/proc/sys/net/netfilter/nf_conntrack_max": [
+					"read"
+				]
+			},
+			"ubus": {
+				"file": [
+					"read"
+				],
+				"system": [
+					"board",
+					"info"
+				],
+				"network.device": [
+					"status"
+				],
+				"network.interface": [
+					"dump"
+				],
+				"luci": [
+					"getBuiltinEthernetPorts"
+				],
+				"luci-rpc": [
+					"getDHCPLeases",
+					"getWirelessDevices",
+					"getHostHints"
+				],
+				"iwinfo": [
+					"assoclist",
+					"scan",
+					"freqlist"
+				],
+				"faceplate": [
+					"audit"
+				]
+			}
+		}
+	}
+}

@@ -1,0 +1,115 @@
+{#
+ Faceplate — a LuCI theme modelled on the router's own front panel.
+ Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	import { getuid, getspnam } from 'luci.core';
+
+	const boardinfo = ubus.call('system', 'board');
+	const hostname = striptags(boardinfo?.hostname ?? '?');
+	const model = striptags(boardinfo?.model ?? '');
+	const ver = 'fp-19';
+
+	http.prepare_content('text/html; charset=UTF-8');
+-%}
+
+<!DOCTYPE html>
+<html lang="{{ dispatcher.lang }}">
+	<head>
+		<meta charset="utf-8">
+		<title>{{ striptags(`${hostname}${dispatched?.title ? ` · ${_(dispatched.title)}` : ''}`) }}</title>
+		<script>
+			(function() {
+				var mq = window.matchMedia('(prefers-color-scheme: dark)'),
+				    root = document.documentElement;
+				window.fpApplyScheme = function() {
+					var s = 'auto';
+					try { s = JSON.parse(localStorage.getItem('fp-scheme')) || 'auto'; } catch (e) {}
+					root.setAttribute('data-darkmode', s == 'dark' || (s == 'auto' && mq.matches));
+					root.setAttribute('data-scheme', s);
+				};
+				mq.addEventListener('change', window.fpApplyScheme);
+				window.fpApplyScheme();
+			})();
+		</script>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="darkreader-lock">
+		<meta name="color-scheme" content="light dark">
+		<link rel="preload" href="{{ media }}/fonts/Barlow-Regular.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="stylesheet" href="{{ media }}/cascade.css?v={{ ver }}">
+		<link rel="icon" href="{{ media }}/logo.svg" sizes="any">
+		{% if (node?.css): %}
+		<link rel="stylesheet" href="{{ resource }}/{{ node.css }}">
+		{% endif %}
+		{% if (css): %}
+		<style title="text/css">{{ css }}</style>
+		{% endif %}
+		<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
+		<script src="{{ resource }}/cbi.js?v={{ ver }}"></script>
+	</head>
+
+	<body class="lang_{{ dispatcher.lang }} {{ entityencode(striptags(node?.title ?? ''), true) }}{{ blank_page ? ' fp-blank' : '' }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
+		{% if (!blank_page): %}
+		<div class="fp-shell">
+			<aside class="fp-rail" id="fp-rail" aria-label="{{ _('Main menu') }}">
+				<a class="fp-brand" href="/" title="{{ _('Status') }}">
+					<span class="fp-led fp-led-power" aria-hidden="true"></span>
+					<span class="fp-brand-text">
+						<span class="fp-host">{{ hostname }}</span>
+						{% if (model): %}<span class="fp-model">{{ model }}</span>{% endif %}
+					</span>
+				</a>
+				<nav class="fp-nav" id="topmenu" style="display:none"></nav>
+				<div class="fp-rail-foot">
+					<ul class="fp-modes" id="modemenu" style="display:none"></ul>
+				</div>
+			</aside>
+			<div class="fp-scrim" id="fp-scrim" hidden></div>
+
+			<div class="fp-main">
+				<header class="fp-bar">
+					<button type="button" class="fp-menu-toggle" id="fp-menu-toggle" aria-controls="fp-rail" aria-expanded="false">
+						<span class="fp-burger" aria-hidden="true"></span>
+						<span class="fp-sr">{{ _('Menu') }}</span>
+					</button>
+					<p class="fp-where" id="fp-where"></p>
+					<button type="button" class="fp-search" id="fp-search" aria-keyshortcuts="Control+K /">
+						<span class="fp-ico fp-i-search" aria-hidden="true"></span>
+						<span class="fp-search-text">{{ _('Search settings') }}</span>
+						<kbd>Ctrl K</kbd>
+					</button>
+					<div id="indicators" class="pull-right"></div>
+					<button type="button" class="fp-icon-btn" id="fp-scheme" aria-label="{{ _('Theme') }}"></button>
+				</header>
+
+				<div id="maincontent" class="container">
+					{% if (getuid() == 0 && getspnam('root')?.pwdp === ''): %}
+						<div class="alert-message warning">
+							<h4>{{ _('No password set!') }}</h4>
+							<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
+							{% if (dispatcher.lookup("admin/system/admin")): %}
+							  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/admin") }}">{{ _('Go to password configuration...') }}</a></div>
+							{% endif %}
+						</div>
+					{% endif %}
+
+					{% if (boardinfo.rootfs_type == "initramfs"): %}
+						<div class="alert-message warning">
+							<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
+							<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
+							{% if (dispatcher.lookup("admin/system/flash")): %}
+							  <div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/flash") }}">{{ _('Go to firmware upgrade...') }}</a></div>
+							{% endif %}
+						</div>
+					{% endif %}
+
+					<noscript>
+						<div class="alert-message warning">
+							<h4>{{ _('JavaScript required!') }}</h4>
+							<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+						</div>
+					</noscript>
+
+					<div id="tabmenu" style="display:none"></div>
+		{% endif %}

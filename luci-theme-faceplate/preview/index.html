@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!-- Static preview of Faceplate using LuCI-shaped markup; not deployed to the router. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrAbhinav · Overview</title>
+<script>
+	var mq = matchMedia('(prefers-color-scheme: dark)');
+	document.documentElement.setAttribute('data-darkmode', mq.matches);
+</script>
+<link rel="stylesheet" href="../root/www/luci-static/faceplate/cascade.css">
+</head>
+<body class="lang_en" data-page="admin-status-overview">
+<div class="fp-shell">
+	<aside class="fp-rail" id="fp-rail">
+		<a class="fp-brand" href="#">
+			<span class="fp-led fp-led-power"></span>
+			<span class="fp-brand-text"><span class="fp-host">PrAbhinav</span><span class="fp-model">D-Link DIR-2660 A1</span></span>
+		</a>
+		<nav class="fp-nav" id="topmenu">
+			<div class="fp-group active open">
+				<button type="button" class="fp-group-head" aria-expanded="true"><span class="fp-led"></span><span>Status</span><span class="fp-chev"></span></button>
+				<ul class="fp-sub">
+					<li class="active"><a href="#">Overview</a></li>
+					<li><a href="#">Routing</a></li>
+					<li><a href="#">Firewall</a></li>
+					<li><a href="#">System Log</a></li>
+					<li><a href="#">Kernel Log</a></li>
+					<li><a href="#">Processes</a></li>
+					<li><a href="#">Realtime Graphs</a></li>
+				</ul>
+			</div>
+			<div class="fp-group">
+				<button type="button" class="fp-group-head"><span class="fp-led"></span><span>System</span><span class="fp-chev"></span></button>
+				<ul class="fp-sub"><li><a href="#">System</a></li></ul>
+			</div>
+			<div class="fp-group">
+				<button type="button" class="fp-group-head"><span class="fp-led"></span><span>Network</span><span class="fp-chev"></span></button>
+				<ul class="fp-sub"><li><a href="#">Interfaces</a></li></ul>
+			</div>
+			<a class="fp-group-head fp-leaf" href="#"><span class="fp-led"></span><span>Log out</span></a>
+		</nav>
+		<div class="fp-rail-foot"></div>
+	</aside>
+	<div class="fp-scrim" id="fp-scrim" hidden></div>
+	<div class="fp-main">
+		<header class="fp-bar">
+			<button type="button" class="fp-menu-toggle" id="fp-menu-toggle"><span class="fp-burger"></span></button>
+			<p class="fp-where"><span class="fp-where-group">Status</span><span class="fp-where-page">Overview</span></p>
+			<div id="indicators"><span data-indicator="uci-changes" data-clickable="true" data-style="active">Unsaved Changes: 3</span></div>
+		</header>
+		<div id="maincontent" class="container">
+			<div id="view">
+				<h2 name="content">Status</h2>
+				<div class="cbi-section">
+					<h3>System</h3>
+					<table class="table">
+						<tr class="tr"><td class="td left" width="33%">Hostname</td><td class="td left">PrAbhinav</td></tr>
+						<tr class="tr"><td class="td left" width="33%">Model</td><td class="td left">D-Link DIR-2660 A1</td></tr>
+						<tr class="tr"><td class="td left" width="33%">Architecture</td><td class="td left">MediaTek MT7621 ver:1 eco:3</td></tr>
+						<tr class="tr"><td class="td left" width="33%">Firmware Version</td><td class="td left">OpenWrt 25.12.6 r33311-981c978eff / LuCI 26.304</td></tr>
+						<tr class="tr"><td class="td left" width="33%">Uptime</td><td class="td left">3d 4h 12m 51s</td></tr>
+						<tr class="tr"><td class="td left" width="33%">Load Average</td><td class="td left">0.08, 0.04, 0.01</td></tr>
+					</table>
+				</div>
+				<div class="cbi-section">
+					<h3>Memory</h3>
+					<table class="table">
+						<tr class="tr"><td class="td left" width="33%">Total Available</td><td class="td left"><div class="cbi-progressbar" title="161.1 MiB / 242.7 MiB (66%)"><div style="width:66%"></div></div></td></tr>
+						<tr class="tr"><td class="td left" width="33%">Used</td><td class="td left"><div class="cbi-progressbar" title="45.2 MiB / 242.7 MiB (18%)"><div style="width:18%"></div></div></td></tr>
+					</table>
+				</div>
+				<div class="cbi-section">
+					<h3>Network</h3>
+					<div class="network-status-table">
+						<div class="ifacebox">
+							<div class="ifacebox-head center active"><strong>IPv4 Upstream</strong></div>
+							<div class="ifacebox-body left">
+								<div class="ifacebadge large"><span><strong>Protocol:</strong> DHCP client<br><strong>Address:</strong> 100.72.14.9/22<br><strong>Gateway:</strong> 100.72.12.1<br><strong>Connected:</strong> 3d 4h 10m</span></div>
+							</div>
+						</div>
+						<div class="ifacebox">
+							<div class="ifacebox-head center"><strong>IPv6 Upstream</strong></div>
+							<div class="ifacebox-body left"><span><em>Not connected</em></span></div>
+						</div>
+					</div>
+				</div>
+				<div class="cbi-section">
+					<h3>Active DHCP Leases</h3>
+					<table class="table lases">
+						<tr class="tr table-titles"><th class="th">Hostname</th><th class="th">IPv4 address</th><th class="th">MAC address</th><th class="th">Lease time remaining</th></tr>
+						<tr class="tr cbi-rowstyle-1"><td class="td" data-title="Hostname">pixel-8</td><td class="td" data-title="IPv4 address">192.168.0.112</td><td class="td" data-title="MAC address">3C:28:6D:1A:9F:02</td><td class="td" data-title="Lease time remaining">10h 21m 4s</td></tr>
+						<tr class="tr cbi-rowstyle-2"><td class="td" data-title="Hostname">thinkpad</td><td class="td" data-title="IPv4 address">192.168.0.140</td><td class="td" data-title="MAC address">A4:C3:F0:55:12:7B</td><td class="td" data-title="Lease time remaining">6h 02m 50s</td></tr>
+						<tr class="tr cbi-rowstyle-1"><td class="td" data-title="Hostname">?</td><td class="td" data-title="IPv4 address">192.168.0.187</td><td class="td" data-title="MAC address">D8:3A:DD:04:6E:91</td><td class="td" data-title="Lease time remaining">11h 47m 13s</td></tr>
+					</table>
+				</div>
+
+				<h2 name="content">Interfaces » lan</h2>
+				<div class="cbi-map-descr">On this page you can configure the network interfaces. You can bridge several interfaces by ticking the "bridge interfaces" field.</div>
+				<div class="cbi-section">
+					<ul class="cbi-tabmenu"><li class="cbi-tab"><a href="#">General Settings</a></li><li class="cbi-tab-disabled"><a href="#">Advanced Settings</a></li><li class="cbi-tab-disabled" data-errors="1"><a href="#">Firewall Settings</a></li><li class="cbi-tab-disabled"><a href="#">DHCP Server</a></li></ul>
+					<div class="cbi-section-node">
+						<div class="cbi-value"><label class="cbi-value-title">Status</label><div class="cbi-value-field"><span class="ifacebadge large"><span><strong>Device:</strong> br-lan<br><strong>Uptime:</strong> 3d 4h 12m<br><strong>RX:</strong> 9.81 GB · <strong>TX:</strong> 41.2 GB</span></span></div></div>
+						<div class="cbi-value"><label class="cbi-value-title" for="p">Protocol</label><div class="cbi-value-field"><div class="cbi-select"><select id="p"><option>Static address</option><option>DHCP client</option></select></div></div></div>
+						<div class="cbi-value"><label class="cbi-value-title" for="a">IPv4 address</label><div class="cbi-value-field"><input id="a" type="text" class="cbi-input-text" value="192.168.0.1"></div></div>
+						<div class="cbi-value"><label class="cbi-value-title" for="m">IPv4 netmask</label><div class="cbi-value-field"><input id="m" type="text" class="cbi-input-text cbi-input-invalid" value="255.255.0"><div class="cbi-value-description">Expecting: valid IPv4 netmask</div></div></div>
+						<div class="cbi-value"><label class="cbi-value-title">Use custom DNS servers</label><div class="cbi-value-field"><div class="cbi-dynlist"><div class="item" tabindex="0"><span>1.1.1.1</span></div><div class="item" tabindex="0"><span>9.9.9.9</span></div><div class="add-item"><input type="text" class="cbi-input-text" placeholder="Add DNS server"><button class="cbi-button cbi-button-add">+</button></div></div></div></div>
+						<div class="cbi-value"><label class="cbi-value-title">Bring up on boot</label><div class="cbi-value-field"><div class="cbi-checkbox"><input type="checkbox" id="b" checked><label for="b"></label></div><div class="cbi-value-description">Starts the interface when the router boots.</div></div></div>
+						<div class="cbi-value"><label class="cbi-value-title">Firewall zone</label><div class="cbi-value-field"><span class="zonebadge" style="background-color:#90f090">lan: <span class="ifacebadge">br-lan</span></span></div></div>
+					</div>
+				</div>
+				<div class="alert-message warning"><h4>No password set!</h4><p>There is no password set on this router. Please configure a root password to protect the web interface.</p><div class="right"><a class="btn" href="#">Go to password configuration...</a></div></div>
+				<div class="cbi-section">
+					<h3>Port Forwards</h3>
+					<table class="table cbi-section-table">
+						<tr class="tr cbi-section-table-titles anonymous"><th class="th cbi-section-table-cell">Name</th><th class="th cbi-section-table-cell">Match</th><th class="th cbi-section-table-cell">Action</th><th class="th cbi-section-table-cell">Enable</th><th class="th cbi-section-table-cell cbi-section-actions"></th></tr>
+						<tr class="tr cbi-section-table-row"><td class="td cbi-value-field" data-title="Name">plex</td><td class="td cbi-value-field" data-title="Match">Incoming IPv4, protocol TCP<br>From <span class="zonebadge" style="background-color:#f09090">wan</span>, port 32400</td><td class="td cbi-value-field" data-title="Action">Forward to <span class="zonebadge" style="background-color:#90f090">lan</span> IP 192.168.0.140</td><td class="td cbi-value-field" data-title="Enable"><input type="checkbox" checked></td><td class="td cbi-section-table-cell nowrap cbi-section-actions"><div><button class="cbi-button cbi-button-edit">Edit</button><button class="cbi-button cbi-button-neutral">Clone</button><button class="cbi-button cbi-button-remove">Delete</button></div></td></tr>
+					</table>
+					<div class="cbi-section-create"><button class="cbi-button cbi-button-add">Add</button></div>
+				</div>
+				<div class="cbi-page-actions"><button class="cbi-button cbi-button-apply">Save &amp; Apply</button> <button class="cbi-button cbi-button-save">Save</button> <button class="cbi-button cbi-button-reset">Reset</button></div>
+			</div>
+		</div>
+		<footer class="fp-foot"><span><a href="#">LuCI 26.304</a> on <a href="#">OpenWrt 25.12.6</a></span></footer>
+	</div>
+</div>
+<div id="modal_overlay"><div class="modal uci-dialog"><h4>Configuration changes</h4><div class="uci-change-legend"><div class="uci-change-legend-label"><ins>&#160;</ins> Option changed</div><div class="uci-change-legend-label"><del>&#160;</del> Option removed</div></div><div class="uci-change-list"><h5>/etc/config/network</h5><ins>network.lan.dns='1.1.1.1' '9.9.9.9'</ins><del>network.lan.ip6assign='60'</del></div><div class="button-row"><button class="btn">Dismiss</button><button class="btn cbi-button-reset">Revert</button><button class="btn cbi-button-positive important">Save &amp; Apply</button></div></div></div>
+<script>
+	if (location.hash == '#modal') document.body.classList.add('modal-overlay-active');
+	if (location.hash == '#drawer') { document.body.classList.add('fp-drawer-open'); document.getElementById('fp-scrim').hidden = false; }
+</script>
+</body>
+</html>
