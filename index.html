@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Faceplate — a modern LuCI theme for OpenWrt</title>
+	<meta name="description" content="Faceplate is a modern, mobile-first LuCI theme for OpenWrt with a live dashboard, a security check, Ctrl+K search and dark mode. About 255 KiB, no runtime dependencies.">
+	<meta property="og:title" content="Faceplate — a modern LuCI theme for OpenWrt">
+	<meta property="og:description" content="Live dashboard, security check, Ctrl+K search, dark mode. About 255 KiB.">
+	<meta property="og:image" content="https://rammanokar.github.io/luci-theme-faceplate/screenshots/hero.png">
+	<meta property="og:type" content="website">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="color-scheme" content="dark">
+	<link rel="icon" href="demo/luci-static/faceplate/logo.svg" sizes="any">
+	<link rel="preload" href="demo/luci-static/faceplate/fonts/Barlow-Regular.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="demo/luci-static/faceplate/fonts/BarlowSemiCondensed-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+	<style>
+		@font-face { font-family: Barlow; font-weight: 400; font-display: swap; src: url(demo/luci-static/faceplate/fonts/Barlow-Regular.woff2) format('woff2'); }
+		@font-face { font-family: Barlow; font-weight: 500; font-display: swap; src: url(demo/luci-static/faceplate/fonts/Barlow-Medium.woff2) format('woff2'); }
+		@font-face { font-family: Barlow; font-weight: 600; font-display: swap; src: url(demo/luci-static/faceplate/fonts/Barlow-SemiBold.woff2) format('woff2'); }
+		@font-face { font-family: 'Barlow Semi Condensed'; font-weight: 600; font-display: swap; src: url(demo/luci-static/faceplate/fonts/BarlowSemiCondensed-SemiBold.woff2) format('woff2'); }
+
+		:root {
+			--bg: #101216; --bg-2: #16191e; --panel: #1b1e24; --line: rgba(255,255,255,.08); --line-2: rgba(255,255,255,.14);
+			--ink: #eceef2; --ink-2: #b4bac5; --ink-3: #868d9a;
+			--amber: #f0a63a; --amber-2: #ffbb55; --led: #3ddc84; --blue: #6b8cff;
+			--r: 14px; --max: 1180px;
+			--display: 'Barlow Semi Condensed', 'Barlow', system-ui, sans-serif;
+		}
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+		body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.6 Barlow, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+		img { max-width: 100%; height: auto; display: block; }
+		a { color: inherit; }
+		.wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+		.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+		/* nav */
+		.nav { position: sticky; top: 0; z-index: 10; background: rgba(16,18,22,.82); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+		.nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+		.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font: 600 22px/1 var(--display); letter-spacing: .2px; }
+		.led { width: 10px; height: 10px; border-radius: 50%; background: var(--led); box-shadow: 0 0 10px var(--led), 0 0 2px var(--led); flex: none; }
+		.nav-links { display: flex; gap: 24px; margin-left: auto; }
+		.nav-links a { text-decoration: none; color: var(--ink-2); font-weight: 500; font-size: 15px; }
+		.nav-links a:hover { color: var(--ink); }
+		@media (max-width: 720px) { .nav-links a:not(.gh) { display: none; } }
+
+		/* buttons */
+		.btn { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 22px; border-radius: 10px; font: 600 16px/1 Barlow, sans-serif; text-decoration: none; border: 1px solid transparent; cursor: pointer; }
+		.btn-primary { background: var(--amber); color: #15171b; }
+		.btn-primary:hover { background: var(--amber-2); }
+		.btn-ghost { border-color: var(--line-2); color: var(--ink); background: rgba(255,255,255,.03); }
+		.btn-ghost:hover { border-color: rgba(255,255,255,.3); }
+		.btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+		/* hero */
+		.hero { position: relative; padding: 88px 0 0; overflow: hidden; }
+		.hero::before { content: ""; position: absolute; inset: -20% -10% auto; height: 760px; background: radial-gradient(700px 420px at 30% 20%, rgba(107,140,255,.14), transparent 70%), radial-gradient(520px 340px at 78% 30%, rgba(240,166,58,.10), transparent 70%); pointer-events: none; }
+		.eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; border: 1px solid var(--line-2); border-radius: 999px; color: var(--ink-2); font-size: 14px; font-weight: 500; }
+		.hero h1 { position: relative; margin: 22px 0 18px; max-width: 900px; font: 600 clamp(44px, 7vw, 84px)/1.02 var(--display); letter-spacing: -.5px; }
+		.hero h1 em { font-style: normal; color: var(--amber); }
+		.lede { position: relative; max-width: 640px; margin: 0 0 34px; color: var(--ink-2); font-size: 20px; }
+		.ctas { position: relative; display: flex; flex-wrap: wrap; gap: 14px; }
+		.stats { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 34px 0 56px; padding: 0; list-style: none; color: var(--ink-3); font-size: 15px; }
+		.stats strong { color: var(--ink); font-weight: 600; margin-right: 6px; }
+		.shot-hero { position: relative; border-radius: var(--r) var(--r) 0 0; overflow: hidden; border: 1px solid var(--line-2); border-bottom: 0; box-shadow: 0 -20px 80px rgba(0,0,0,.45); }
+		.shot-hero img { width: 100%; }
+		.shot-hero .try { position: absolute; right: 20px; bottom: 20px; }
+
+		/* sections */
+		section { padding: 104px 0; border-top: 1px solid var(--line); }
+		.kicker { color: var(--amber); font: 600 14px/1 Barlow, sans-serif; letter-spacing: 1.6px; text-transform: uppercase; margin: 0 0 14px; }
+		h2 { margin: 0 0 16px; font: 600 clamp(32px, 4.4vw, 48px)/1.08 var(--display); letter-spacing: -.3px; }
+		.sub { margin: 0 0 48px; max-width: 640px; color: var(--ink-2); font-size: 19px; }
+
+		/* feature rows */
+		.feature { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; margin-top: 88px; }
+		.feature:first-of-type { margin-top: 0; }
+		.feature.flip { grid-template-columns: 7fr 5fr; }
+		.feature.flip .copy { order: 2; }
+		.feature h3 { margin: 0 0 12px; font: 600 30px/1.15 var(--display); }
+		.feature p { margin: 0 0 16px; color: var(--ink-2); }
+		.feature ul { margin: 0; padding: 0; list-style: none; color: var(--ink-2); }
+		.feature li { position: relative; padding-left: 22px; margin: 8px 0; }
+		.feature li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+		.frame { border-radius: var(--r); overflow: hidden; border: 1px solid var(--line-2); box-shadow: 0 30px 70px rgba(0,0,0,.45); background: var(--panel); }
+		kbd { font: 600 13px/1 Barlow, sans-serif; padding: 3px 7px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; color: var(--ink); background: rgba(255,255,255,.04); }
+		@media (max-width: 880px) {
+			.feature, .feature.flip { grid-template-columns: 1fr; gap: 28px; margin-top: 72px; }
+			.feature.flip .copy { order: 0; }
+		}
+
+		/* theme toggle gallery */
+		.toggle { display: inline-flex; padding: 4px; border: 1px solid var(--line-2); border-radius: 10px; margin-bottom: 24px; }
+		.toggle button { border: 0; background: none; color: var(--ink-2); font: 600 15px/1 Barlow, sans-serif; padding: 10px 18px; border-radius: 7px; cursor: pointer; }
+		.toggle button[aria-pressed="true"] { background: var(--ink); color: #15171b; }
+		.swap { position: relative; }
+		.swap img { transition: opacity .35s; }
+		.swap img + img { position: absolute; inset: 0; opacity: 0; }
+		.swap.light img:first-child { opacity: 0; }
+		.swap.light img + img { opacity: 1; }
+
+		/* phones */
+		.phones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+		.phone { margin: 0; }
+		.phone .frame { border-radius: 30px; padding: 8px; background: #08090b; border-color: #2a2e36; }
+		.phone img { border-radius: 23px; }
+		.phone figcaption { margin-top: 14px; text-align: center; color: var(--ink-3); font-size: 15px; }
+		@media (max-width: 880px) { .phones { grid-template-columns: repeat(2, 1fr); } }
+
+		/* grid of small features */
+		.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+		.cell { background: var(--bg); padding: 28px; }
+		.cell h4 { margin: 0 0 8px; font: 600 20px/1.2 var(--display); display: flex; align-items: center; gap: 10px; }
+		.cell h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+		.cell p { margin: 0; color: var(--ink-2); font-size: 16px; }
+		@media (max-width: 880px) { .grid { grid-template-columns: 1fr 1fr; } }
+		@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+		/* install */
+		.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+		.term { position: relative; background: #0b0c0f; border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden; }
+		.term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--ink-3); font-size: 14px; }
+		.term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2c3038; }
+		.term pre { margin: 0; padding: 20px 20px 22px; overflow-x: auto; font: 15px/1.75 ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace; color: #d7dbe3; }
+		.term pre .c { color: #6f7685; }
+		.term pre .p { color: var(--led); user-select: none; }
+		.copy-btn { position: absolute; top: 7px; right: 8px; height: 30px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); color: var(--ink-2); font: 500 13px/1 Barlow, sans-serif; cursor: pointer; }
+		.copy-btn:hover { color: var(--ink); }
+		ol.howto { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+		ol.howto li { counter-increment: s; position: relative; padding: 0 0 24px 52px; color: var(--ink-2); }
+		ol.howto li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-2); display: grid; place-items: center; color: var(--ink); font-weight: 600; }
+		ol.howto strong { color: var(--ink); font-weight: 600; }
+		.note { margin-top: 8px; padding: 16px 18px; border-left: 3px solid var(--amber); background: rgba(240,166,58,.06); border-radius: 0 10px 10px 0; color: var(--ink-2); font-size: 16px; }
+		@media (max-width: 880px) { .steps { grid-template-columns: 1fr; } }
+
+		/* faq */
+		details { border-bottom: 1px solid var(--line); padding: 20px 0; }
+		details:first-of-type { border-top: 1px solid var(--line); }
+		summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; font: 600 20px/1.3 var(--display); }
+		summary::-webkit-details-marker { display: none; }
+		summary::after { content: "+"; color: var(--ink-3); font: 400 26px/1 Barlow, sans-serif; }
+		details[open] summary::after { content: "–"; }
+		details p { margin: 12px 0 0; color: var(--ink-2); max-width: 760px; }
+
+		/* cta + footer */
+		.final { text-align: center; }
+		.final .ctas { justify-content: center; }
+		.final .sub { margin-left: auto; margin-right: auto; }
+		footer { border-top: 1px solid var(--line); padding: 36px 0 48px; color: var(--ink-3); font-size: 15px; }
+		footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+		footer a { color: var(--ink-2); }
+	</style>
+</head>
+<body>
+
+<header class="nav">
+	<div class="wrap">
+		<a class="brand" href="#top"><span class="led" aria-hidden="true"></span>Faceplate</a>
+		<nav class="nav-links" aria-label="Page">
+			<a href="#features">Features</a>
+			<a href="#mobile">Mobile</a>
+			<a href="#install">Install</a>
+			<a href="#faq">FAQ</a>
+			<a class="gh" href="https://github.com/rammanokar/luci-theme-faceplate">GitHub</a>
+		</nav>
+	</div>
+</header>
+
+<main id="top">
+	<div class="hero">
+		<div class="wrap">
+			<span class="eyebrow"><span class="led" aria-hidden="true"></span>LuCI theme for OpenWrt 25.12+</span>
+			<h1>Your router, <em>finally</em> easy to read.</h1>
+			<p class="lede">Faceplate replaces LuCI's dated look with a fast, mobile-first design and adds a live dashboard that shows what's connected, what's slow and what's insecure.</p>
+			<div class="ctas">
+				<a class="btn btn-primary" href="demo/">Try the live demo →</a>
+				<a class="btn btn-ghost" href="#install">Install in one command</a>
+			</div>
+			<ul class="stats" aria-label="At a glance">
+				<li><strong>~255 KiB</strong>installed</li>
+				<li><strong>0</strong>runtime dependencies</li>
+				<li><strong>0</strong>external requests</li>
+				<li><strong>Every</strong>LuCI page restyled</li>
+			</ul>
+			<div class="shot-hero">
+				<img src="screenshots/desktop-dark.png" alt="Faceplate dashboard in dark mode: internet status, live traffic graph, device, CPU, memory and connection tiles" width="1600" height="1000">
+			</div>
+		</div>
+	</div>
+
+	<section id="features">
+		<div class="wrap">
+			<p class="kicker">What you get</p>
+			<h2>Everything you check, on one screen.</h2>
+			<p class="sub">Faceplate keeps all of LuCI's power and gives it a home page that answers the questions you actually log in for.</p>
+
+			<div class="feature">
+				<div class="copy">
+					<h3>A dashboard that's live</h3>
+					<p>The home page shows whether you're online, how fast traffic is moving, and how hard the router is working, updated every few seconds.</p>
+					<ul>
+						<li>Live download and upload graph with a table view</li>
+						<li>WAN, IPv6, gateway and DNS with one-click copy</li>
+						<li>Devices, CPU, memory and connection-table tiles</li>
+						<li>Front-panel port view with link speeds</li>
+					</ul>
+				</div>
+				<div class="frame"><img src="screenshots/traffic-chart.png" alt="Live WAN traffic chart with hover tooltip" loading="lazy" width="1600" height="453"></div>
+			</div>
+
+			<div class="feature flip">
+				<div class="copy">
+					<h3>A security check in plain English</h3>
+					<p>The router checks its own setup and explains what it found, with a button that takes you straight to the fix.</p>
+					<ul>
+						<li>Weak or reused Wi-Fi and admin passwords</li>
+						<li>Risky port forwards and SSH or the web interface exposed to the internet</li>
+						<li>Encryption, HTTPS, NTP and DNS-rebind checks</li>
+						<li>Runs on the router, so passwords never reach the browser</li>
+					</ul>
+				</div>
+				<div class="frame"><img src="screenshots/desktop-light.png" alt="Security and health report listing warnings and suggestions" loading="lazy" width="1600" height="1000"></div>
+			</div>
+
+			<div class="feature">
+				<div class="copy">
+					<h3>Who's connected and which channel to use</h3>
+					<p>See every device with its name, IP, band and signal strength. One click scans nearby networks, charts how crowded each channel is, and recommends a quieter one.</p>
+					<ul>
+						<li>Filter devices by name, IP or MAC</li>
+						<li>Weak-signal warnings for distant clients</li>
+						<li>Channel advice that skips DFS channels</li>
+					</ul>
+				</div>
+				<div class="frame"><img src="screenshots/wifi-devices.png" alt="Connected devices list next to a Wi-Fi channel congestion chart" loading="lazy" width="1600" height="1000"></div>
+			</div>
+
+			<div class="feature flip">
+				<div class="copy">
+					<h3>Find any setting in a second</h3>
+					<p>Press <kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>/</kbd>. Search understands everyday words: "wifi password", "port forward" and "factory reset" each take you to the right page.</p>
+					<ul>
+						<li>Searches every LuCI page and tab, including installed apps</li>
+						<li>Recent pages are listed first</li>
+						<li><kbd>Ctrl</kbd> <kbd>Enter</kbd> pins a page to the sidebar</li>
+					</ul>
+				</div>
+				<div class="frame"><img src="screenshots/search.png" alt="Command palette searching for wifi" loading="lazy" width="1600" height="1000"></div>
+			</div>
+		</div>
+	</section>
+
+	<section id="themes">
+		<div class="wrap">
+			<p class="kicker">Light and dark</p>
+			<h2>Follows your device, or your preference.</h2>
+			<p class="sub">Auto, light or dark, switched from the top bar and remembered per browser. Both themes are designed for good contrast, not just inverted colours.</p>
+			<div class="toggle" role="group" aria-label="Preview theme">
+				<button type="button" aria-pressed="true" data-mode="dark">Dark</button>
+				<button type="button" aria-pressed="false" data-mode="light">Light</button>
+			</div>
+			<div class="frame swap" id="swap">
+				<img src="screenshots/login-dark.png" alt="Login page in dark mode, styled like the label on the bottom of a router" loading="lazy" width="1600" height="1000">
+				<img src="screenshots/login-light.png" alt="Login page in light mode" loading="lazy" width="1600" height="1000">
+			</div>
+		</div>
+	</section>
+
+	<section id="mobile">
+		<div class="wrap">
+			<p class="kicker">Mobile-first</p>
+			<h2>Built for fixing Wi-Fi from the couch.</h2>
+			<p class="sub">Touch-sized controls, a slide-out menu and a dashboard that fits on one screen. No pinch-zooming tiny tables.</p>
+			<div class="phones">
+				<figure class="phone"><div class="frame"><img src="screenshots/mobile-dark.png" alt="Mobile dashboard in dark mode" loading="lazy" width="520" height="1125"></div><figcaption>Dashboard</figcaption></figure>
+				<figure class="phone"><div class="frame"><img src="screenshots/mobile-menu.png" alt="Mobile navigation drawer" loading="lazy" width="520" height="1125"></div><figcaption>Menu and shortcuts</figcaption></figure>
+				<figure class="phone"><div class="frame"><img src="screenshots/mobile-search.png" alt="Search on mobile" loading="lazy" width="520" height="1125"></div><figcaption>Search</figcaption></figure>
+				<figure class="phone"><div class="frame"><img src="screenshots/mobile-light.png" alt="Mobile dashboard in light mode" loading="lazy" width="520" height="1125"></div><figcaption>Light mode</figcaption></figure>
+			</div>
+		</div>
+	</section>
+
+	<section id="details">
+		<div class="wrap">
+			<p class="kicker">Under the hood</p>
+			<h2>Small, private, and polite to your router.</h2>
+			<p class="sub">Designed for routers with 16 MB of flash, not for a showroom.</p>
+			<div class="grid">
+				<div class="cell"><h4><span class="dot"></span>Tiny footprint</h4><p>About 255 KiB installed. Icons are inlined at build time and the CSS and JS are minified.</p></div>
+				<div class="cell"><h4><span class="dot"></span>No phoning home</h4><p>Fonts are self-hosted. No CDNs, analytics or external requests of any kind.</p></div>
+				<div class="cell"><h4><span class="dot"></span>Works with every app</h4><p>It's a theme, not a fork. Stock and third-party LuCI pages keep working and pick up the new look.</p></div>
+				<div class="cell"><h4><span class="dot"></span>Read-only dashboard</h4><p>The dashboard never changes your config. "Fix" buttons only take you to the right page.</p></div>
+				<div class="cell"><h4><span class="dot"></span>Light on the CPU</h4><p>Traffic history is kept in your browser, so the router does no extra logging.</p></div>
+				<div class="cell"><h4><span class="dot"></span>Accessible</h4><p>Keyboard navigation, visible focus, ARIA roles and a table view for every chart.</p></div>
+			</div>
+		</div>
+	</section>
+
+	<section id="install">
+		<div class="wrap">
+			<p class="kicker">Install</p>
+			<h2>Two minutes, fully reversible.</h2>
+			<p class="sub">You need OpenWrt 25.12 or later with LuCI, SSH access to the router, and python3 and Node.js on your computer for the build step.</p>
+			<div class="steps">
+				<div class="term">
+					<div class="term-bar"><i></i><i></i><i></i><span>your computer</span></div>
+					<button type="button" class="copy-btn" data-copy="git clone https://github.com/rammanokar/luci-theme-faceplate.git faceplate
+cd faceplate/luci-theme-faceplate
+./install.sh root@192.168.1.1">Copy</button>
+<pre><span class="p">$ </span>git clone https://github.com/rammanokar/luci-theme-faceplate.git faceplate
+<span class="p">$ </span>cd faceplate/luci-theme-faceplate
+<span class="p">$ </span>./install.sh root@192.168.1.1
+<span class="c">Faceplate installed; previous theme: /luci-static/bootstrap</span>
+
+<span class="c"># changed your mind?</span>
+<span class="p">$ </span>./uninstall.sh root@192.168.1.1</pre>
+				</div>
+				<ol class="howto">
+					<li><strong>Builds</strong> a small copy of the theme with the icons inlined.</li>
+					<li><strong>Copies</strong> it to the router over SSH. Nothing is downloaded on the router.</li>
+					<li><strong>Health-checks</strong> the security plugin and removes it automatically if it misbehaves, so LuCI always stays reachable.</li>
+					<li><strong>Remembers</strong> your current theme, then makes Faceplate the default. <code>uninstall.sh</code> restores it.</li>
+				</ol>
+				<p class="note">Already logged in? Log out and back in once so your session can open the new dashboard.</p>
+			</div>
+		</div>
+	</section>
+
+	<section id="faq">
+		<div class="wrap">
+			<p class="kicker">FAQ</p>
+			<h2>Questions people ask</h2>
+			<details><summary>Will it break my other LuCI apps?</summary><p>No. Faceplate supplies the header, footer, login page and a stylesheet. Every page, including third-party apps, renders as before with the new styling.</p></details>
+			<details><summary>Does it slow down my router?</summary><p>No. The dashboard uses the same ubus calls as LuCI's own status page, and traffic history lives in your browser. The security check only runs when you open the dashboard or click "Check again".</p></details>
+			<details><summary>Which routers does it support?</summary><p>Any router running OpenWrt 25.12 or later with LuCI. It's been tested on MediaTek MT7621 (D-Link DIR-2660) and aarch64 (D-Link AQUILA PRO AI M30).</p></details>
+			<details><summary>Can I switch back?</summary><p>Yes. Run <code>./uninstall.sh</code> to restore your previous theme, or pick another theme under System → System → Language and Style.</p></details>
+			<details><summary>Is the demo running on a real router?</summary><p>No. The demo runs the real theme CSS and JavaScript in your browser, fed with made-up data. Only the dashboard is live in the demo; on a router, every LuCI page is restyled.</p></details>
+		</div>
+	</section>
+
+	<section class="final">
+		<div class="wrap">
+			<h2>Give your router a better face.</h2>
+			<p class="sub">Try it in your browser now, then install it in two minutes.</p>
+			<div class="ctas">
+				<a class="btn btn-primary" href="demo/">Open the live demo →</a>
+				<a class="btn btn-ghost" href="https://github.com/rammanokar/luci-theme-faceplate">Star on GitHub</a>
+			</div>
+		</div>
+	</section>
+</main>
+
+<footer>
+	<div class="wrap">
+		<span>Faceplate · Apache-2.0 · Not affiliated with the OpenWrt project.</span>
+		<span><a href="https://github.com/rammanokar/luci-theme-faceplate">Source</a> · <a href="https://github.com/rammanokar/luci-theme-faceplate/issues">Issues</a> · <a href="demo/">Demo</a></span>
+	</div>
+</footer>
+
+<script>
+	(function() {
+		var swap = document.getElementById('swap');
+		document.querySelectorAll('.toggle button').forEach(function(b) {
+			b.addEventListener('click', function() {
+				document.querySelectorAll('.toggle button').forEach(function(x) { x.setAttribute('aria-pressed', x === b); });
+				swap.classList.toggle('light', b.dataset.mode == 'light');
+			});
+		});
+		document.querySelectorAll('.copy-btn').forEach(function(b) {
+			b.addEventListener('click', function() {
+				navigator.clipboard.writeText(b.dataset.copy).then(function() {
+					b.textContent = 'Copied';
+					setTimeout(function() { b.textContent = 'Copy'; }, 1600);
+				});
+			});
+		});
+	})();
+</script>
+</body>
+</html>

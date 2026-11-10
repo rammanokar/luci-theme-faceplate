@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!-- Faceplate demo: the login page (sysauth.ut) rendered with mock board info. Any password works. -->
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>openwrt · Log in — Faceplate demo</title>
+	<script>
+		(function() {
+			var mq = window.matchMedia('(prefers-color-scheme: dark)'), root = document.documentElement;
+			var s = 'auto';
+			try { s = JSON.parse(localStorage.getItem('fp-scheme')) || 'auto'; } catch (e) {}
+			root.setAttribute('data-darkmode', s == 'dark' || (s == 'auto' && mq.matches));
+		})();
+	</script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="light dark">
+	<link rel="stylesheet" href="luci-static/faceplate/cascade.css">
+	<link rel="icon" href="luci-static/faceplate/logo.svg" sizes="any">
+	<link rel="stylesheet" href="demo.css">
+</head>
+<body class="lang_en fp-blank" data-page="">
+<main class="fp-login">
+	<section class="fp-sticker" aria-label="Device">
+		<div class="fp-sticker-head">
+			<span class="fp-led fp-led-power" aria-hidden="true"></span>
+			<span class="fp-sticker-host">openwrt</span>
+		</div>
+		<dl class="fp-sticker-specs">
+			<div><dt>Model</dt><dd>D-Link DIR-2660 A1</dd></div>
+			<div><dt>Firmware Version</dt><dd>OpenWrt 25.12.6 r33311-981c978eff</dd></div>
+			<div><dt>Kernel Version</dt><dd>6.12.112</dd></div>
+			<div><dt>Architecture</dt><dd>MediaTek MT7621 ver:1 eco:3</dd></div>
+		</dl>
+		<div class="fp-sticker-code" aria-hidden="true"></div>
+	</section>
+
+	<form class="fp-login-form" id="fp-login-form" action="index.html">
+		<h1>Authorization Required</h1>
+		<p class="fp-login-lede">Demo: any password works.</p>
+		<label class="fp-field" for="luci_username">
+			<span>Username</span>
+			<input name="luci_username" id="luci_username" type="text" autocomplete="username" value="root">
+		</label>
+		<label class="fp-field" for="luci_password">
+			<span>Password</span>
+			<input name="luci_password" id="luci_password" type="password" autocomplete="off" autofocus>
+		</label>
+		<button type="submit" class="btn cbi-button-positive important fp-login-btn">Log in</button>
+	</form>
+</main>
+<a class="demo-pill" href="../">Live demo · mock data<span>Get Faceplate →</span></a>
+<script>
+	document.getElementById('fp-login-form').addEventListener('submit', function(ev) {
+		ev.preventDefault();
+		var b = this.querySelector('button');
+		b.disabled = true;
+		b.classList.add('spinning');
+		b.textContent = 'Logging in…';
+		setTimeout(function() { location.href = 'index.html'; }, 700);
+	});
+</script>
+</body>
+</html>
