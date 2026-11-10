@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- Faceplate live demo: the real theme CSS and JS modules, fed mock data by luci-stub.js. -->
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>openwrt · Dashboard — Faceplate demo</title>
+	<script>
+		(function() {
+			var mq = window.matchMedia('(prefers-color-scheme: dark)'), root = document.documentElement;
+			window.fpApplyScheme = function() {
+				var s = 'auto';
+				try { s = JSON.parse(localStorage.getItem('fp-scheme')) || 'auto'; } catch (e) {}
+				root.setAttribute('data-darkmode', s == 'dark' || (s == 'auto' && mq.matches));
+				root.setAttribute('data-scheme', s);
+			};
+			mq.addEventListener('change', window.fpApplyScheme);
+			window.fpApplyScheme();
+		})();
+	</script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="light dark">
+	<meta name="description" content="Live demo of Faceplate, a modern LuCI theme and dashboard for OpenWrt, running on mock data.">
+	<link rel="preload" href="luci-static/faceplate/fonts/Barlow-Regular.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet" href="luci-static/faceplate/cascade.css">
+	<link rel="icon" href="luci-static/faceplate/logo.svg" sizes="any">
+	<link rel="stylesheet" href="demo.css">
+</head>
+<body class="lang_en" data-page="admin-dashboard">
+<div class="fp-shell">
+	<aside class="fp-rail" id="fp-rail" aria-label="Main menu">
+		<a class="fp-brand" href="#page=admin/dashboard" title="Status">
+			<span class="fp-led fp-led-power" aria-hidden="true"></span>
+			<span class="fp-brand-text"><span class="fp-host">openwrt</span><span class="fp-model">D-Link DIR-2660 A1</span></span>
+		</a>
+		<nav class="fp-nav" id="topmenu" style="display:none"></nav>
+		<div class="fp-rail-foot"><ul class="fp-modes" id="modemenu" style="display:none"></ul></div>
+	</aside>
+	<div class="fp-scrim" id="fp-scrim" hidden></div>
+	<div class="fp-main">
+		<header class="fp-bar">
+			<button type="button" class="fp-menu-toggle" id="fp-menu-toggle" aria-controls="fp-rail" aria-expanded="false">
+				<span class="fp-burger" aria-hidden="true"></span><span class="fp-sr">Menu</span>
+			</button>
+			<p class="fp-where" id="fp-where"></p>
+			<button type="button" class="fp-search" id="fp-search" aria-keyshortcuts="Control+K /">
+				<span class="fp-ico fp-i-search" aria-hidden="true"></span><span class="fp-search-text">Search settings</span><kbd>Ctrl K</kbd>
+			</button>
+			<div id="indicators" class="pull-right"></div>
+			<button type="button" class="fp-icon-btn" id="fp-scheme" aria-label="Theme"></button>
+		</header>
+		<div id="maincontent" class="container">
+			<div id="tabmenu" style="display:none"></div>
+			<div id="view"><p class="demo-loading">Loading demo…</p></div>
+		</div>
+		<footer class="fp-foot"><span>Faceplate demo · mock data · <a href="../">Back to project page</a></span></footer>
+	</div>
+</div>
+<a class="demo-pill" href="../">Live demo · mock data<span>Get Faceplate →</span></a>
+
+<script src="mock-data.js"></script>
+<script src="luci-stub.js"></script>
+<script src="faceplate-modules.js"></script>
+<script>
+	MENU.__init__();
+	Promise.resolve(DASH.load()).then(function(d) {
+		document.getElementById('view').replaceChildren(DASH.render(d));
+	});
+</script>
+</body>
+</html>
